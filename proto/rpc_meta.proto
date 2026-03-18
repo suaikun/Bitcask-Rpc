@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package myrpc;
+
+message GetRequest {
+    string key = 1;
+}
+
+message GetResponse {
+    int32 status = 1;
+    string value = 2;
+}
+
+// ---- 写操作协议 ----
+message SetRequest {
+    string key = 1;
+    string value = 2;
+}
+
+message SetResponse {
+    int32 status = 1;
+}
+// -----------------------
+
+message RpcMessage {
+    uint64 request_id = 1;
+    string service_name = 2;
+    string method_name = 3;
+    bytes payload = 4;
+}
