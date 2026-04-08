@@ -4,14 +4,13 @@
 #include <vector>
 #include <atomic>
 #include <string>
-#include <sys/uio.h> // readv需要
-#include <unistd.h>  // read/write需要
+#include <sys/uio.h> 
+#include <unistd.h>  
 #include <assert.h>
 #include <errno.h>
 
 class Buffer {
 public:
-    // 初始化大小设为 1024 字节
     Buffer(int initBuffSize = 1024) : buffer_(initBuffSize), readPos_(0), writePos_(0) {}
     ~Buffer() = default;
 
@@ -30,7 +29,7 @@ public:
         readPos_ += len;
     }
 
-    // 清空缓冲区（实际上只是重置指针，不释放内存以复用）
+    // 清空缓冲区
     void RetrieveAll() {
         bzero(&buffer_[0], buffer_.size());
         readPos_ = 0;
@@ -75,7 +74,7 @@ public:
         else {
             // Buffer 被装满了，剩余的数据装在了 extrabuf 中
             writePos_ = buffer_.size(); // Buffer 读满
-            // 将溢出在 extrabuf 的数据追加到 Buffer (这里会触发底层 vector 扩容)
+            // 将溢出在 extrabuf 的数据追加到 Buffer 
             Append(extrabuf, len - writable); 
         }
         return len;

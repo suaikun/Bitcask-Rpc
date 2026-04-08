@@ -13,9 +13,8 @@ using namespace std;
 using namespace std::chrono;
 
 // --- 压测参数配置 ---
-const int NUM_THREADS = 50;            // 并发线程数（模拟 10 个客户端）
-const int REQUESTS_PER_THREAD = 4000; // 每个客户端发送的请求数
-// 总请求数 = 10 * 10000 = 100,000 次
+const int NUM_THREADS = 50;            // 并发线程数
+const int REQUESTS_PER_THREAD = 2000; // 每个客户端发送的请求数
 
 // 统计成功和失败的请求数
 atomic<int> success_count(0);
@@ -34,7 +33,6 @@ bool CallRpc(int sockfd, const string& method, const string& payload_str, string
     
     uint32_t len = send_data.size();
     
-    // 🌟 优化：拼接包头和包体，一次性发给内核，绝不触发 Nagle 延迟！
     string packet;
     packet.append((char*)&len, 4);
     packet.append(send_data);
@@ -74,7 +72,6 @@ void benchmark_worker(int thread_id, bool is_write) {
 
     // 2. 疯狂发送请求
     for (int i = 0; i < REQUESTS_PER_THREAD; ++i) {
-        // 构造独一无二的 Key，例如 "key_3_456" (线程3的第456个key)
         string key = "key_" + to_string(thread_id) + "_" + to_string(i);
         string payload_str, resp_payload;
 
@@ -109,7 +106,7 @@ void benchmark_worker(int thread_id, bool is_write) {
 void run_benchmark(const string& test_name, bool is_write) {
     success_count = 0;
     fail_count = 0;
-    cout << "\n🚀 开始 " << test_name << " 压测 (10万次请求)...\n";
+    cout << "\n开始 " << test_name << " 压测...\n";
     
     auto start_time = high_resolution_clock::now();
 
@@ -128,10 +125,10 @@ void run_benchmark(const string& test_name, bool is_write) {
     double qps = (success_count + fail_count) * 1000.0 / duration;
     
     cout << "----------------------------------------\n";
-    cout << "📊 测试结果: " << test_name << "\n";
+    cout << "测试结果: " << test_name << "\n";
     cout << "总耗时: " << duration << " ms\n";
     cout << "成功数: " << success_count << " | 失败数: " << fail_count << "\n";
-    cout << "🔥 QPS : " << qps << " req/sec\n";
+    cout << "QPS : " << qps << " req/sec\n";
     cout << "平均延迟: " << (double)duration / (success_count + fail_count) << " ms/req\n";
     cout << "----------------------------------------\n";
 }

@@ -11,7 +11,6 @@
 
 class Log {
 public:
-    // C++11 局部静态变量单例模式（线程安全且懒汉式）
     static Log* getInstance() {
         static Log instance;
         return &instance;
@@ -45,10 +44,6 @@ private:
     std::mutex m_mutex;                   // 保护写入操作的锁
 };
 
-// ---------------------------------------------------------
-// 🌟 核心修改1：去掉了 DEBUG、INFO、WARN 的 flush() 操作
-// 让主线程把日志扔进队列就立刻返回，绝不在此时刷盘！
-// ---------------------------------------------------------
 #define LOG_DEBUG(format, ...) { Log::getInstance()->write_log(0, format, ##__VA_ARGS__); }
 #define LOG_INFO(format, ...)  { Log::getInstance()->write_log(1, format, ##__VA_ARGS__); }
 #define LOG_WARN(format, ...)  { Log::getInstance()->write_log(2, format, ##__VA_ARGS__); }

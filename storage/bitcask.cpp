@@ -3,12 +3,9 @@
 #include <algorithm>
 #include <cerrno>
 #include <cstring>
+#include <thread>
 
 namespace storage {
-
-// =========================================================
-// 🚀 BitcaskShard 的实现：基本只需把原来的 BitcaskEngine 替换掉
-// =========================================================
 bool BitcaskShard::write_all(int fd, const void* buf, size_t len) {
     const char* p = static_cast<const char*>(buf);
     size_t left = len;
@@ -63,7 +60,7 @@ BitcaskShard::~BitcaskShard() {
 }
 
 bool BitcaskShard::init(const std::string& base_dir) {
-    // 🌟 为当前分片创建专属物理子目录
+    //为当前分片创建专属物理子目录
     db_dir_ = base_dir + "/shard_" + std::to_string(shard_id_);
     if (mkdir(db_dir_.c_str(), 0777) != 0 && errno != EEXIST) {
         return false;
@@ -362,22 +359,30 @@ void BitcaskShard::merge() {
     }
 }
 
-// =========================================================
-// 🚀 BitcaskEngine 的实现：极其轻量的哈希路由代理层
-// =========================================================
+BitcaskEngine::~BitcaskEngine() {
+    stop_auto_merge_.store(true);
+    if (auto_merge_thread_.joinable()) {
+        auto_merge_thread_.join();
+    }
+}
+
 bool BitcaskEngine::init(const std::string& db_dir) {
     // 1. 先创建总的根目录
     if (mkdir(db_dir.c_str(), 0777) != 0 && errno != EEXIST) {
         return false;
     }
     
-    std::cout << "\n▶️ 准备并行初始化 16 个底层存储分片...\n";
+    std::cout << "\n准备并行初始化 16 个底层存储分片...\n";
     // 2. 依次实例化并初始化 16 个分片
     for (int i = 0; i < SHARD_NUM; ++i) {
         shards_[i] = std::make_unique<BitcaskShard>(i);
         if (!shards_[i]->init(db_dir)) {
             return false; // 如果有任何一个分片挂了，初始化宣告失败
         }
+    }
+    stop_auto_merge_.store(false);
+    if (!auto_merge_thread_.joinable()) {
+        auto_merge_thread_ = std::thread(&BitcaskEngine::auto_merge_loop, this);
     }
     return true;
 }
@@ -399,10 +404,19 @@ int BitcaskEngine::del(const std::string& key) {
 }
 
 void BitcaskEngine::merge() {
-    std::cout << "\n♻️ 触发全局后台垃圾回收，开始依次处理所有分片...\n";
+    std::lock_guard<std::mutex> guard(merge_mutex_);
+    std::cout << "\n触发全局后台垃圾回收，开始依次处理所有分片...\n";
     // 工业级环境这里甚至可以用多线程同时 merge
     for (int i = 0; i < SHARD_NUM; ++i) {
         shards_[i]->merge();
+    }
+}
+
+void BitcaskEngine::auto_merge_loop() {
+    while (!stop_auto_merge_.load()) {
+        std::this_thread::sleep_for(std::chrono::seconds(AUTO_MERGE_INTERVAL_SEC));
+        if (stop_auto_merge_.load()) break;
+        merge();
     }
 }
 

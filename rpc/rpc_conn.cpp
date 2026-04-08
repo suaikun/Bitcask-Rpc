@@ -79,7 +79,6 @@ bool rpc_conn::read() {
     return true;
 }
 
-// 极其清爽的非阻塞写
 bool rpc_conn::write() {
     int err = 0;
     if (writeBuffer_.ReadableBytes() == 0) {
@@ -121,7 +120,7 @@ void rpc_conn::process() {
         readBuffer_.Retrieve(message_len); 
 
         // ---------------------------------------------------------
-        // 1. 反序列化外层 RpcMessage (拆快递盒)
+        // 1. 反序列化外层
         // ---------------------------------------------------------
         myrpc::RpcMessage rpc_req;
         if (!rpc_req.ParseFromString(buffer_data)) {
@@ -140,7 +139,7 @@ void rpc_conn::process() {
         rpc_resp.set_method_name(method);
 
         // ---------------------------------------------------------
-        // 2. RPC 路由分发机制 (真正连接磁盘引擎)
+        // 2. RPC 路由分发机制 
         // ---------------------------------------------------------
         if (service == "KVStore" && method == "Get") {
             myrpc::GetRequest get_req;
@@ -148,7 +147,7 @@ void rpc_conn::process() {
             myrpc::GetResponse get_resp;
             
             std::string value;
-            // 🌟 核心：真正去磁盘里拿数据
+            //去磁盘里拿数据
             int ret = storage::BitcaskEngine::GetInstance()->get(get_req.key(), value);
             if (ret == 0) {
                 get_resp.set_status(0);
@@ -163,7 +162,7 @@ void rpc_conn::process() {
             rpc_resp.set_payload(resp_payload);
             
         } else if (service == "KVStore" && method == "Set") {
-            // 🌟 核心：处理写入磁盘请求
+            //处理写入磁盘请求
             myrpc::SetRequest set_req;
             set_req.ParseFromString(rpc_req.payload());
             myrpc::SetResponse set_resp;
@@ -186,7 +185,7 @@ void rpc_conn::process() {
         rpc_resp.SerializeToString(&final_bytes);
         uint32_t final_len = final_bytes.size();
 
-        // 组装 TCP 报文：【4字节长度】 + 【Protobuf二进制流】
+        // 组装 TCP 报文：4字节长度 + Protobuf二进制流
         writeBuffer_.Append((const char*)&final_len, 4);
         writeBuffer_.Append(final_bytes.data(), final_bytes.size());
     }

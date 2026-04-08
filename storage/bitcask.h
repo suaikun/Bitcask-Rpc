@@ -14,6 +14,8 @@
 #include <chrono>
 #include <cstdint>
 #include <functional> // 引入 std::hash
+#include <thread>
+#include <atomic>
 
 namespace storage {
 
@@ -96,10 +98,15 @@ public:
 
 private:
     BitcaskEngine() {}
-    ~BitcaskEngine() {}
+    ~BitcaskEngine();
+    void auto_merge_loop();
 
     static const int SHARD_NUM = 16; // 划分为 16 个并发分片桶
+    static const int AUTO_MERGE_INTERVAL_SEC = 30;
     std::unique_ptr<BitcaskShard> shards_[SHARD_NUM];
+    std::thread auto_merge_thread_;
+    std::atomic<bool> stop_auto_merge_{false};
+    std::mutex merge_mutex_;
 };
 
 } // namespace storage

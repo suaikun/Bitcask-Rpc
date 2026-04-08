@@ -9,7 +9,7 @@ HeapTimer::~HeapTimer() {
     clear(); 
 }
 
-// 核心：交换堆里的两个节点，并同步更新映射表
+// 交换堆里的两个节点，并同步更新映射表
 void HeapTimer::swapNode_(size_t i, size_t j) {
     std::swap(heap_[i], heap_[j]);
     ref_[heap_[i].id] = i;

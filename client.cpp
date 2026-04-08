@@ -40,10 +40,10 @@ int main() {
     if (connect(sockfd, (struct sockaddr*)&servaddr, sizeof(servaddr)) < 0) {
         std::cerr << "连接服务器失败！\n"; return -1;
     }
-    std::cout << "✅ 成功连接到高性能 RPC 数据库!\n\n";
+    std::cout << "成功连接到高性能 RPC 数据库!\n\n";
 
-    // ------------------ 动作 1：写入数据 (Set) ------------------
-    std::cout << "▶️ 准备写入硬盘数据 [Key: offer_2026, Value: ByteDance_Arch_Intern]...\n";
+    // ------------------ 动作 1：写入数据 ------------------
+    std::cout << " 准备写入硬盘数据 [Key: offer_2026, Value: ByteDance_Arch_Intern]...\n";
     myrpc::SetRequest set_req;
     set_req.set_key("offer_2026");
     set_req.set_value("ByteDance_Arch_Intern");
@@ -55,10 +55,10 @@ int main() {
     
     myrpc::SetResponse set_resp;
     set_resp.ParseFromString(set_resp_payload);
-    if(set_resp.status() == 0) std::cout << "✅ 落盘成功！\n\n";
+    if(set_resp.status() == 0) std::cout << "落盘成功！\n\n";
 
-    // ------------------ 动作 2：读取刚才写入的数据 (Get) ---------
-    std::cout << "▶️ 准备从硬盘读取 [Key: offer_2026] 的数据...\n";
+    // ------------------ 动作 2：读取刚才写入的数据---------
+    std::cout << "准备从硬盘读取 [Key: offer_2026] 的数据...\n";
     myrpc::GetRequest get_req;
     get_req.set_key("offer_2026");
 
@@ -69,7 +69,7 @@ int main() {
 
     myrpc::GetResponse get_resp;
     get_resp.ParseFromString(get_resp_payload);
-    std::cout << "🎉 读取结果: " << get_resp.value() << "\n";
+    std::cout << "读取结果: " << get_resp.value() << "\n";
 
     close(sockfd);
     return 0;

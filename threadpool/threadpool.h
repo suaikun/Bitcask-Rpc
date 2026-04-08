@@ -8,7 +8,6 @@
 #include <vector>
 #include <exception>
 
-// 模板类，T 代表任务类
 template <typename T>
 class ThreadPool {
 public:
@@ -115,7 +114,6 @@ void ThreadPool<T>::run() {
             continue;
         }
         
-        // 核心步骤：处理具体的业务逻辑！
         request->process(); 
     }
 }
